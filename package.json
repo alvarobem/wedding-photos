@@ -1,0 +1,38 @@
+{
+  "name": "fotobodas",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "get-token": "node scripts/get-token.js"
+  },
+  "dependencies": {
+    "cloudinary": "^2.9.0",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
+    "framer-motion": "^12.29.2",
+    "googleapis": "^170.1.0",
+    "lucide-react": "^0.563.0",
+    "next": "16.1.6",
+    "open": "^11.0.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-dropzone": "^14.3.8",
+    "server-destroy": "^1.0.1",
+    "sharp": "^0.34.5",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
