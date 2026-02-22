@@ -48,74 +48,56 @@ export function PhotoUploader() {
     });
   };
 
+  const uploadSingleFile = async (file: FileWithPreview): Promise<void> => {
+    // Marcar como uploading
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === file.id ? { ...f, status: "uploading" as const } : f
+      )
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append("guestName", guestName || "Invitado");
+      formData.append("photo", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al subir");
+      }
+
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === file.id
+            ? { ...f, status: "success" as const, progress: 100 }
+            : f
+        )
+      );
+    } catch {
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === file.id ? { ...f, status: "error" as const } : f
+        )
+      );
+    }
+  };
+
   const uploadFiles = async () => {
     if (files.length === 0) return;
 
     setIsUploading(true);
 
     const pendingToUpload = files.filter((f) => f.status !== "success");
-    const BATCH_SIZE = 10;
+    const CONCURRENT_UPLOADS = 3;
 
-    // Dividir en lotes de máximo 10 archivos
-    for (let i = 0; i < pendingToUpload.length; i += BATCH_SIZE) {
-      const batch = pendingToUpload.slice(i, i + BATCH_SIZE);
-
-      // Marcar todos los del lote como uploading
-      setFiles((prev) =>
-        prev.map((f) =>
-          batch.some((b) => b.id === f.id)
-            ? { ...f, status: "uploading" as const }
-            : f
-        )
-      );
-
-      try {
-        const formData = new FormData();
-        formData.append("guestName", guestName || "Invitado");
-
-        // Añadir todos los archivos del lote
-        batch.forEach((file, index) => {
-          formData.append(`photo${index}`, file);
-        });
-
-        const response = await fetch("/api/upload/bulk", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error("Error al subir");
-        }
-
-        const data = await response.json();
-
-        // Actualizar estado según resultados
-        setFiles((prev) =>
-          prev.map((f) => {
-            const batchFile = batch.find((b) => b.id === f.id);
-            if (!batchFile) return f;
-
-            const result = data.results?.find(
-              (r: { originalName: string }) => r.originalName === batchFile.name
-            );
-
-            if (result?.success) {
-              return { ...f, status: "success" as const, progress: 100 };
-            } else {
-              return { ...f, status: "error" as const };
-            }
-          })
-        );
-      } catch {
-        // Marcar todos los del lote como error
-        setFiles((prev) =>
-          prev.map((f) =>
-            batch.some((b) => b.id === f.id)
-              ? { ...f, status: "error" as const }
-              : f
-          )
-        );
-      }
+    // Subir en grupos concurrentes de 3 para no saturar
+    for (let i = 0; i < pendingToUpload.length; i += CONCURRENT_UPLOADS) {
+      const batch = pendingToUpload.slice(i, i + CONCURRENT_UPLOADS);
+      await Promise.all(batch.map((file) => uploadSingleFile(file)));
     }
 
     setIsUploading(false);
